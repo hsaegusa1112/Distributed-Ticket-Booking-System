@@ -23,14 +23,14 @@ INSERT INTO showings (id, event_id, starts_at, capacity)
 SELECT
   md5(format('%s:%s:%s', event_id, day_number, slot_number))::UUID,
   event_id,
-  date '2026-09-01' + (day_number - 1) + slot_time,
+  date '2026-09-01' + (day_number - 1) + slot_time + schedule_offset,
   120
 FROM (
   VALUES
-    ('11111111-1111-1111-1111-111111111111'::UUID),
-    ('22222222-2222-2222-2222-222222222222'::UUID),
-    ('33333333-3333-3333-3333-333333333333'::UUID)
-) AS event_data(event_id)
+    ('11111111-1111-1111-1111-111111111111'::UUID, interval '0 hours'),
+    ('22222222-2222-2222-2222-222222222222'::UUID, interval '2 hours'),
+    ('33333333-3333-3333-3333-333333333333'::UUID, interval '1 hour')
+) AS event_data(event_id, schedule_offset)
 CROSS JOIN (VALUES (1), (2), (3)) AS days(day_number)
 CROSS JOIN (
   VALUES

@@ -60,11 +60,20 @@ services:
   api:
     profiles: ["api"]
     build: ./packages/api
+    command: yarn dev
     environment:
       PORT: "8080"
+      AUTH_SERVICE_URL: http://auth:8081
+      BOOKING_SERVICE_URL: http://booking:8083
+      JWT_SECRET: local-development-jwt-secret-change-before-production
+      WEB_ORIGIN: http://localhost:3000
     ports:
       - "8080:8080"
     depends_on:
+      auth:
+        condition: service_started
+      booking:
+        condition: service_healthy
       migrations:
         condition: service_completed_successfully
       postgres:
@@ -73,14 +82,26 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./packages/api/src
+          target: /app/src
+        - action: rebuild
+          path: ./packages/api/package.json
+        - action: rebuild
+          path: ./packages/api/yarn.lock
 
   auth:
     profiles: ["auth"]
     build: ./packages/auth
     environment:
       PORT: "8081"
-    ports:
-      - "8081:8081"
+      DATABASE_URL: postgres://ticket_booking:ticket_booking@postgres:5432/ticket_booking?sslmode=disable
+      JWT_SECRET: local-development-jwt-secret-change-before-production
+      WEB_ORIGIN: http://localhost:3000
+    expose:
+      - "8081"
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -90,10 +111,21 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./packages/auth/main.go
+        - action: rebuild
+          path: ./packages/auth/go.mod
+        - action: rebuild
+          path: ./packages/auth/go.sum
+        - action: rebuild
+          path: ./packages/auth/Dockerfile
 
   notification:
     profiles: ["notification"]
     build: ./packages/notification
+    command: fastapi dev main.py --host 0.0.0.0 --port 8082
     environment:
       PORT: "8082"
     ports:
@@ -107,6 +139,15 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./packages/notification/main.py
+          target: /app/main.py
+        - action: rebuild
+          path: ./packages/notification/pyproject.toml
+        - action: rebuild
+          path: ./packages/notification/uv.lock
 
   booking:
     profiles: ["booking"]
@@ -123,6 +164,14 @@ services:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./packages/booking/src
+        - action: rebuild
+          path: ./packages/booking/pom.xml
+        - action: rebuild
+          path: ./packages/booking/Dockerfile
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
