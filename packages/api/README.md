@@ -22,6 +22,7 @@ Set `JWT_SECRET` to the same value used by the auth service. The API validates i
 | `POST` | `/api/auth/login` | None | Returns a Bearer JWT from the Auth service. |
 | `GET` | `/api/me` | Bearer JWT | Returns the authenticated user's ID and username. |
 | `GET` | `/api/events` | None | Lists events and their showings from the Booking service. |
+| `GET` | `/api/stores` | None | Lists ticket stores from PostgreSQL. |
 | `POST` | `/api/bookings` | Bearer JWT | Creates a confirmed booking for a showing. |
 
 ## Authentication
@@ -92,6 +93,22 @@ Returns the event catalogue and its showings. `capacity` is the total venue capa
 ]
 ```
 
+### `GET /api/stores`
+
+Returns the seeded ticket-store catalogue. The API caches the PostgreSQL response in Redis for five minutes and falls back to PostgreSQL if Redis is unavailable.
+
+```json
+[
+	{
+		"id": "44444444-4444-4444-4444-444444444441",
+		"name": "Midtown Box Office",
+		"address": "123 Market Street",
+		"city": "San Francisco",
+		"phone": "+1-415-555-0141"
+	}
+]
+```
+
 ### `POST /api/bookings`
 
 Creates a one-or-more-ticket booking for the authenticated user. The user ID is read from the Bearer JWT; clients cannot choose it. Requests that exceed the remaining capacity return `409 Conflict`.
@@ -100,7 +117,7 @@ Creates a one-or-more-ticket booking for the authenticated user. The user ID is 
 curl -X POST http://localhost:8080/api/bookings \
 	-H 'Authorization: Bearer <access-token>' \
 	-H 'Content-Type: application/json' \
-	-d '{"showingId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","quantity":1}'
+	-d '{"showingId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","email":"guest@example.com","quantity":1}'
 ```
 
 Successful response:
