@@ -35,6 +35,14 @@ Start infrastructure only:
 docker compose up -d
 ```
 
+Flyway applies SQL migrations from `migrations/` before profile-enabled application services start. Run migrations on demand with:
+
+```bash
+docker compose run --rm migrations
+```
+
+Add each database change as a new versioned file, for example `migrations/V2__add_booking_reference.sql`. Do not modify an already-applied migration.
+
 The application services are opt-in Compose profiles. Infrastructure is unprofiled, so it starts with every profile selection.
 
 ```bash
