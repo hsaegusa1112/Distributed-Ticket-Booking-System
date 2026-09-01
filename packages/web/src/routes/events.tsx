@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
-import { getAccessToken, getAuthenticatedUser } from '../auth'
+import { getAuthenticatedUser } from '../auth'
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -43,21 +43,20 @@ function Events() {
   const [bookingConfirmed, setBookingConfirmed] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [isBooking, setIsBooking] = useState(false)
-  const [user, setUser] = useState<ReturnType<typeof getAuthenticatedUser>>(null)
+  const [user, setUser] = useState<Awaited<ReturnType<typeof getAuthenticatedUser>>>(null)
   const selectedEvent = eventList.find((event) => event.id === selectedEventId)
   const selectedShowing = selectedEvent?.showings.find(
     (showing) => showing.id === selectedShowingId,
   )
 
   useEffect(() => {
-    setUser(getAuthenticatedUser())
+    void getAuthenticatedUser().then(setUser)
   }, [])
 
   const confirmBooking = async () => {
     if (!selectedShowing) return
 
-    const accessToken = getAccessToken()
-    if (!accessToken) {
+    if (!user) {
       setBookingError('Log in to confirm a booking.')
       return
     }
@@ -67,8 +66,8 @@ function Events() {
     try {
       const response = await fetch(`${apiUrl}/api/bookings`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ showingId: selectedShowing.id, email: email.trim(), quantity: 1 }),

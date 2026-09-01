@@ -1,7 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
-import { getAuthenticatedUser, saveAccessToken } from '../auth'
+import { getAuthenticatedUser } from '../auth'
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -11,7 +11,9 @@ export function AuthPage({ action }: { action: 'login' | 'register' }) {
   const isRegistering = action === 'register'
 
   useEffect(() => {
-    if (getAuthenticatedUser()) void navigate({ to: '/', replace: true })
+    void getAuthenticatedUser().then((user) => {
+      if (user) void navigate({ to: '/', replace: true })
+    })
   }, [navigate])
 
   const submit = async (formElement: HTMLFormElement) => {
@@ -27,6 +29,7 @@ export function AuthPage({ action }: { action: 'login' | 'register' }) {
     try {
       const response = await fetch(`${apiUrl}/api/auth/${action}`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       })
@@ -38,10 +41,6 @@ export function AuthPage({ action }: { action: 'login' | 'register' }) {
         return
       }
 
-      if (!body.accessToken || typeof body.accessToken !== 'string') {
-        throw new Error('The API returned an invalid login response.')
-      }
-      saveAccessToken(body.accessToken)
       await navigate({ to: '/' })
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to reach the API.')

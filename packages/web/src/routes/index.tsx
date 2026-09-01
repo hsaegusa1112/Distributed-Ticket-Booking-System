@@ -3,13 +3,36 @@ import { useEffect, useState } from 'react'
 
 import { getAuthenticatedUser } from '../auth'
 
-export const Route = createFileRoute('/')({ component: Home })
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
+type Store = {
+  id: string
+  name: string
+  address: string
+  city: string
+  phone: string
+}
+
+export const Route = createFileRoute('/')({
+  loader: async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/stores`)
+      const body = await response.json()
+      if (!response.ok) throw new Error('Unable to load stores.')
+      return { stores: body as Array<Store> }
+    } catch {
+      return { stores: [] as Array<Store> }
+    }
+  },
+  component: Home,
+})
 
 function Home() {
-  const [user, setUser] = useState<ReturnType<typeof getAuthenticatedUser>>(null)
+  const { stores } = Route.useLoaderData()
+  const [user, setUser] = useState<Awaited<ReturnType<typeof getAuthenticatedUser>>>(null)
 
   useEffect(() => {
-    setUser(getAuthenticatedUser())
+    void getAuthenticatedUser().then(setUser)
   }, [])
 
   return (
@@ -37,6 +60,28 @@ function Home() {
             </div>
           </div>
         </section>
+        {stores.length > 0 && (
+          <section className="border-t border-[#17211c]/15 px-6 py-10 sm:px-12 lg:px-16">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a84a32]">
+              In person
+            </p>
+            <h2 className="mt-3 font-serif text-3xl font-bold">Find a ticket store.</h2>
+            <div className="mt-6 grid gap-5 md:grid-cols-3">
+              {stores.map((store) => (
+                <address key={store.id} className="border-l-2 border-[#a84a32] pl-4 not-italic">
+                  <h3 className="font-serif text-xl font-bold">{store.name}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#17211c]/65">
+                    {store.address}<br />
+                    {store.city}
+                  </p>
+                  <a className="mt-3 inline-block text-sm font-bold text-[#a84a32]" href={`tel:${store.phone}`}>
+                    {store.phone}
+                  </a>
+                </address>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   )
