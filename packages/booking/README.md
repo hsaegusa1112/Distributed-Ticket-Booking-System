@@ -36,6 +36,30 @@ curl http://localhost:8083/actuator/health
 
 The health response includes the PostgreSQL datasource status.
 
+## Events interface
+
+### `GET /events`
+
+Returns the events and showings stored in PostgreSQL. This is an internal endpoint consumed by the API service.
+
+```json
+[
+	{
+		"id": "11111111-1111-1111-1111-111111111111",
+		"title": "Afterlight",
+		"eventType": "Cinema premiere",
+		"imageUrl": "https://images.unsplash.com/...",
+		"showings": [
+			{
+				"id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"startsAt": "2026-09-01T11:30:00Z",
+				"capacity": 120
+			}
+		]
+	}
+]
+```
+
 ## Docker
 
 From the repository root:
