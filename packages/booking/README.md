@@ -69,6 +69,7 @@ Creates a confirmed booking. This internal endpoint locks the selected showing w
 {
 	"showingId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 	"customerId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+	"email": "guest@example.com",
 	"quantity": 1
 }
 ```
