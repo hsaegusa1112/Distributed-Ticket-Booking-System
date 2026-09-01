@@ -27,4 +27,11 @@ npm run check
 ## Authentication
 
 The login and registration screens are presentation views. Connect them to the auth service before enabling account creation or login; do not store passwords in browser storage.
+
+For local development, the database seed includes these accounts:
+
+| Username | Password |
+| --- | --- |
+| `demo_admin` | `password` |
+| `demo_guest` | `password` |
 3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
