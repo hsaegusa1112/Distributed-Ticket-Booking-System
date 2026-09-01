@@ -1,11 +1,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { getAuthenticatedUser } from '../auth'
+import { getAccessToken, getAuthenticatedUser } from '../auth'
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
-type Showing = { id: string; startsAt: string; capacity: number }
+type Showing = { id: string; startsAt: string; capacity: number; bookedAmount: number }
 type Event = {
   id: string
   title: string
@@ -34,16 +34,67 @@ export const Route = createFileRoute('/events')({
 
 function Events() {
   const { events, eventsError } = Route.useLoaderData()
+  const [eventList, setEventList] = useState(events)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(
-    events[0]?.id ?? null,
+    eventList[0]?.id ?? null,
   )
   const [selectedShowingId, setSelectedShowingId] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
   const [bookingConfirmed, setBookingConfirmed] = useState(false)
-  const user = getAuthenticatedUser()
-  const selectedEvent = events.find((event) => event.id === selectedEventId)
+  const [bookingError, setBookingError] = useState<string | null>(null)
+  const [isBooking, setIsBooking] = useState(false)
+  const [user, setUser] = useState<ReturnType<typeof getAuthenticatedUser>>(null)
+  const selectedEvent = eventList.find((event) => event.id === selectedEventId)
   const selectedShowing = selectedEvent?.showings.find(
     (showing) => showing.id === selectedShowingId,
   )
+
+  useEffect(() => {
+    setUser(getAuthenticatedUser())
+  }, [])
+
+  const confirmBooking = async () => {
+    if (!selectedShowing) return
+
+    const accessToken = getAccessToken()
+    if (!accessToken) {
+      setBookingError('Log in to confirm a booking.')
+      return
+    }
+
+    setIsBooking(true)
+    setBookingError(null)
+    try {
+      const response = await fetch(`${apiUrl}/api/bookings`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ showingId: selectedShowing.id, email: email.trim(), quantity: 1 }),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Unable to confirm your booking.')
+
+      setEventList((currentEvents) => currentEvents.map((event) => (
+        event.id !== selectedEvent?.id
+          ? event
+          : {
+              ...event,
+              showings: event.showings.map((showing) => (
+                showing.id === selectedShowing.id
+                  ? { ...showing, capacity: body.capacity, bookedAmount: body.bookedAmount }
+                  : showing
+              )),
+            }
+      )))
+      setBookingConfirmed(true)
+    } catch (error) {
+      setBookingError(error instanceof Error ? error.message : 'Unable to reach the API.')
+    } finally {
+      setIsBooking(false)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#f4f1e8] p-5 text-[#17211c] sm:p-8">
@@ -81,7 +132,7 @@ function Events() {
             <p className="mt-6 text-sm text-[#17211c]/65">Loading events...</p>
           )}
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {events.map((event) => (
+            {eventList.map((event) => (
               <button
                 key={event.id}
                 className={`overflow-hidden border text-left ${selectedEvent?.id === event.id ? 'border-[#17211c] bg-[#17211c] text-[#f4f1e8]' : 'border-[#17211c]/20 bg-[#e7e3d7]'}`}
@@ -89,6 +140,7 @@ function Events() {
                   setSelectedEventId(event.id)
                   setSelectedShowingId(null)
                   setBookingConfirmed(false)
+                  setBookingError(null)
                 }}
               >
                 <img
@@ -122,6 +174,7 @@ function Events() {
                     onClick={() => {
                       setSelectedShowingId(showing.id)
                       setBookingConfirmed(false)
+                      setBookingError(null)
                     }}
                   >
                     <p className="font-bold">
@@ -130,14 +183,16 @@ function Events() {
                         timeStyle: 'short',
                       }).format(new Date(showing.startsAt))}
                     </p>
-                    <p className="mt-1 text-sm text-[#17211c]/65">
-                      Capacity {showing.capacity}
+                    <p
+                      className={`mt-1 text-sm ${showing.id === selectedShowingId ? 'text-[#f4f1e8]/75' : 'text-[#17211c]/65'}`}
+                    >
+                      {showing.bookedAmount} booked of {showing.capacity}
                     </p>
                   </button>
                 ))}
               </div>
               {selectedShowing && (
-                <section className="mt-8 border border-[#17211c] bg-[#e7e3d7] p-5 sm:flex sm:items-end sm:justify-between sm:gap-6">
+                <section className="mx-auto mt-8 max-w-3xl border border-[#17211c] bg-[#e7e3d7] p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#a84a32]">
                       {bookingConfirmed ? 'Booking confirmed' : 'Your selection'}
@@ -152,13 +207,33 @@ function Events() {
                       }).format(new Date(selectedShowing.startsAt))}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="mt-5 bg-[#17211c] px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-[#f4f1e8] hover:bg-[#a84a32] sm:mt-0"
-                    onClick={() => setBookingConfirmed(true)}
-                  >
-                    {bookingConfirmed ? 'Confirmed' : 'Confirm booking'}
-                  </button>
+                  <div className="mt-5 flex flex-col gap-3 sm:mt-0 sm:min-w-72">
+                    <label className="text-xs font-bold uppercase tracking-[0.12em]" htmlFor="booking-email">
+                      Email address
+                    </label>
+                    <input
+                      id="booking-email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(event) => {
+                        setEmail(event.target.value)
+                        setBookingConfirmed(false)
+                        setBookingError(null)
+                      }}
+                      className="border border-[#17211c]/30 bg-white px-3 py-2 text-sm outline-none focus:border-[#17211c]"
+                    />
+                    <button
+                      type="button"
+                      disabled={isBooking || !email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
+                      className="bg-[#17211c] px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-[#f4f1e8] hover:bg-[#a84a32] disabled:cursor-not-allowed disabled:bg-[#17211c]/35"
+                      onClick={() => void confirmBooking()}
+                    >
+                      {bookingConfirmed ? 'Confirmed' : isBooking ? 'Confirming...' : 'Confirm booking'}
+                    </button>
+                    {bookingError && <p className="text-sm text-[#a84a32]">{bookingError}</p>}
+                  </div>
                 </section>
               )}
             </section>

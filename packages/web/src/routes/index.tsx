@@ -1,11 +1,17 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 
 import { getAuthenticatedUser } from '../auth'
 
 export const Route = createFileRoute('/')({ component: Home })
 
 function Home() {
-  const user = getAuthenticatedUser()
+  const [user, setUser] = useState<ReturnType<typeof getAuthenticatedUser>>(null)
+
+  useEffect(() => {
+    setUser(getAuthenticatedUser())
+  }, [])
+
   return (
     <main className="min-h-screen bg-[#f4f1e8] p-5 text-[#17211c] sm:p-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-7xl flex-col overflow-hidden border border-[#17211c]/15 bg-[#e7e3d7]">

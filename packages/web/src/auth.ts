@@ -33,6 +33,17 @@ export function getAuthenticatedUser() {
   }
 }
 
+export function getAccessToken() {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const accessToken = window.localStorage.getItem(accessTokenKey)
+    return accessToken && getTokenClaims(accessToken) ? accessToken : null
+  } catch {
+    return null
+  }
+}
+
 export function saveAccessToken(accessToken: string) {
   if (typeof window !== 'undefined') window.localStorage.setItem(accessTokenKey, accessToken)
 }
