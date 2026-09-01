@@ -1,0 +1,9 @@
+{
+  "name": "booking-service",
+  "private": true,
+  "scripts": {
+    "start": "mvn spring-boot:run",
+    "dev": "mvn spring-boot:run",
+    "build": "mvn package"
+  }
+}

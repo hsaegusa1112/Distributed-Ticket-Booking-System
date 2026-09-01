@@ -10,6 +10,7 @@ A microservice-based ticket booking system with a web client and independent API
 | `packages/api` | Express | `http://localhost:8080` | `http://localhost:8080/health` |
 | `packages/auth` | Go | `http://localhost:8081` | `http://localhost:8081/health` |
 | `packages/notification` | FastAPI | `http://localhost:8082` | `http://localhost:8082/health` |
+| `packages/booking` | Spring Boot | `http://localhost:8083` | `http://localhost:8083/actuator/health` |
 
 ## Prerequisites
 
@@ -35,13 +36,33 @@ Start infrastructure only:
 docker compose up -d
 ```
 
-Flyway applies SQL migrations from `migrations/` before profile-enabled application services start. Run migrations on demand with:
+### Database migrations
+
+The `migrations` service uses Flyway and is started automatically by `docker compose up`. It waits for PostgreSQL to pass its health check, then applies the versioned SQL files in `migrations/`. Profile-enabled application services wait until this job completes successfully.
+
+Run or re-run migrations without starting an application service:
 
 ```bash
 docker compose run --rm migrations
 ```
 
-Add each database change as a new versioned file, for example `migrations/V2__add_booking_reference.sql`. Do not modify an already-applied migration.
+View the migration job's output or inspect its recorded history:
+
+```bash
+docker compose logs migrations
+docker compose exec postgres psql -U ticket_booking -d ticket_booking -c 'SELECT * FROM flyway_schema_history ORDER BY installed_rank;'
+```
+
+Create every database change as a new, sequentially versioned file. For example:
+
+```text
+migrations/V1__create_ticket_booking_schema.sql
+migrations/V2__add_booking_reference.sql
+```
+
+Never modify a migration that has already been applied. Flyway stores its checksum in `flyway_schema_history` and will reject an altered migration. During local development, `docker compose down -v` removes the PostgreSQL volume, including both the schema and migration history; the next `docker compose up -d` applies all migrations from scratch.
+
+`V2__add_users_and_seed_event_showings.sql` creates the shared `users` table, which stores a username and a password hash only. Password hashing and authentication must occur in the auth service; never send or store plaintext passwords in the database or web client.
 
 The application services are opt-in Compose profiles. Infrastructure is unprofiled, so it starts with every profile selection.
 
@@ -55,14 +76,17 @@ docker compose --profile auth up -d
 # Infrastructure plus the FastAPI notification service
 docker compose --profile notification up -d
 
+# Infrastructure plus the Spring Boot booking service
+docker compose --profile booking up -d
+
 # Infrastructure plus all containerized services
-docker compose --profile api --profile auth --profile notification up -d
+docker compose --profile api --profile auth --profile notification --profile booking up -d
 ```
 
 Alternatively, set profiles once for a shell session:
 
 ```bash
-export COMPOSE_PROFILES=api,auth,notification
+export COMPOSE_PROFILES=api,auth,notification,booking
 docker compose up -d
 ```
 
@@ -110,6 +134,13 @@ uv sync
 npm run dev
 ```
 
+### Booking
+
+```bash
+cd packages/booking
+npm run start
+```
+
 ## Health Checks
 
 Once services are running, verify them with:
@@ -118,4 +149,5 @@ Once services are running, verify them with:
 curl http://localhost:8080/health
 curl http://localhost:8081/health
 curl http://localhost:8082/health
+curl http://localhost:8083/actuator/health
 ```
