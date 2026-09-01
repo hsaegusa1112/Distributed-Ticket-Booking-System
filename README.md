@@ -62,8 +62,6 @@ migrations/V2__add_booking_reference.sql
 
 Never modify a migration that has already been applied. Flyway stores its checksum in `flyway_schema_history` and will reject an altered migration. During local development, `docker compose down -v` removes the PostgreSQL volume, including both the schema and migration history; the next `docker compose up -d` applies all migrations from scratch.
 
-`V2__add_users_and_seed_event_showings.sql` creates the shared `users` table, which stores a username and a password hash only. Password hashing and authentication must occur in the auth service; never send or store plaintext passwords in the database or web client.
-
 The application services are opt-in Compose profiles. Infrastructure is unprofiled, so it starts with every profile selection.
 
 ```bash

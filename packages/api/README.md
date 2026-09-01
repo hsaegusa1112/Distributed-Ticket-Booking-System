@@ -22,6 +22,7 @@ Set `JWT_SECRET` to the same value used by the auth service. The API validates i
 | `POST` | `/api/auth/login` | None | Returns a Bearer JWT from the Auth service. |
 | `GET` | `/api/me` | Bearer JWT | Returns the authenticated user's ID and username. |
 | `GET` | `/api/events` | None | Lists events and their showings from the Booking service. |
+| `POST` | `/api/bookings` | Bearer JWT | Creates a confirmed booking for a showing. |
 
 ## Authentication
 
@@ -70,7 +71,7 @@ Invalid credentials return `401 Unauthorized`.
 
 ### `GET /api/events`
 
-Returns the event catalogue and its available showings. The API obtains this data from the internal Booking service.
+Returns the event catalogue and its showings. `capacity` is the total venue capacity and `bookedAmount` is the number of confirmed tickets. The API obtains this data from the internal Booking service.
 
 ```json
 [
@@ -83,11 +84,29 @@ Returns the event catalogue and its available showings. The API obtains this dat
 			{
 				"id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 				"startsAt": "2026-09-01T11:30:00Z",
-				"capacity": 120
+				"capacity": 120,
+				"bookedAmount": 0
 			}
 		]
 	}
 ]
+```
+
+### `POST /api/bookings`
+
+Creates a one-or-more-ticket booking for the authenticated user. The user ID is read from the Bearer JWT; clients cannot choose it. Requests that exceed the remaining capacity return `409 Conflict`.
+
+```bash
+curl -X POST http://localhost:8080/api/bookings \
+	-H 'Authorization: Bearer <access-token>' \
+	-H 'Content-Type: application/json' \
+	-d '{"showingId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","quantity":1}'
+```
+
+Successful response:
+
+```json
+{ "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "capacity": 120, "bookedAmount": 1 }
 ```
 
 ### `GET /health`

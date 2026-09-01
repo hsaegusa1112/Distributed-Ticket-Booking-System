@@ -40,7 +40,7 @@ The health response includes the PostgreSQL datasource status.
 
 ### `GET /events`
 
-Returns the events and showings stored in PostgreSQL. This is an internal endpoint consumed by the API service.
+Returns the events and showings stored in PostgreSQL. `capacity` is the total venue capacity and `bookedAmount` is the number of confirmed tickets. This is an internal endpoint consumed by the API service.
 
 ```json
 [
@@ -53,12 +53,27 @@ Returns the events and showings stored in PostgreSQL. This is an internal endpoi
 			{
 				"id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 				"startsAt": "2026-09-01T11:30:00Z",
-				"capacity": 120
+				"capacity": 120,
+				"bookedAmount": 0
 			}
 		]
 	}
 ]
 ```
+
+### `POST /bookings`
+
+Creates a confirmed booking. This internal endpoint locks the selected showing while it checks remaining capacity and inserts the booking, preventing concurrent requests from overselling a showing.
+
+```json
+{
+	"showingId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+	"customerId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+	"quantity": 1
+}
+```
+
+If successful, it returns the booking ID, total capacity, and updated booked amount. A request for more tickets than remain returns `409 Conflict`.
 
 ## Docker
 
