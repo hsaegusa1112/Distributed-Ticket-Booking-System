@@ -29,6 +29,7 @@ Docker Compose provisions the shared infrastructure by default:
 | Redis | `localhost:6379` | N/A |
 | RabbitMQ AMQP | `localhost:5672` | user/password: `ticket_booking` |
 | RabbitMQ management UI | `http://localhost:15672` | user/password: `ticket_booking` |
+| Mailpit inbox | `http://localhost:8025` | N/A |
 
 Start infrastructure only:
 

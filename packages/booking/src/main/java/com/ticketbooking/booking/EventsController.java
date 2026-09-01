@@ -4,7 +4,12 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,10 +20,13 @@ import org.springframework.http.HttpStatus;
 
 @RestController
 public class EventsController {
+  private static final Logger logger = LoggerFactory.getLogger(EventsController.class);
   private final JdbcClient jdbcClient;
+  private final RabbitTemplate rabbitTemplate;
 
-  public EventsController(JdbcClient jdbcClient) {
+  public EventsController(JdbcClient jdbcClient, RabbitTemplate rabbitTemplate) {
     this.jdbcClient = jdbcClient;
+    this.rabbitTemplate = rabbitTemplate;
   }
 
   @GetMapping("/events")
@@ -94,6 +102,18 @@ public class EventsController {
         .param("quantity", request.quantity())
         .update();
 
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        try {
+          rabbitTemplate.convertAndSend(BookingMessagingConfiguration.BOOKING_CONFIRMED_QUEUE,
+              new BookingConfirmedEvent(bookingId, request.showingId(), request.email(), request.quantity()));
+        } catch (Exception exception) {
+          logger.error("publish booking confirmation {}", bookingId, exception);
+        }
+      }
+    });
+
     return new BookingResponse(bookingId, capacity, bookedQuantity + request.quantity());
   }
 
@@ -108,4 +128,6 @@ public class EventsController {
   public record CreateBookingRequest(UUID showingId, UUID customerId, String email, Integer quantity) {}
 
   public record BookingResponse(UUID id, int capacity, int bookedAmount) {}
+
+  public record BookingConfirmedEvent(UUID bookingId, UUID showingId, String email, int quantity) {}
 }

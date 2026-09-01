@@ -1,6 +1,11 @@
 spring:
   application:
     name: booking-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:ticket_booking}
+    password: ${RABBITMQ_PASSWORD:ticket_booking}
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ticket_booking}
     username: ${DB_USERNAME:ticket_booking}

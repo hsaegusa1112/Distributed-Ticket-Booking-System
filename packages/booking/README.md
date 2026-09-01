@@ -76,6 +76,8 @@ Creates a confirmed booking. This internal endpoint locks the selected showing w
 
 If successful, it returns the booking ID, total capacity, and updated booked amount. A request for more tickets than remain returns `409 Conflict`.
 
+After the booking transaction commits, the service publishes a durable `booking.confirmed` RabbitMQ message containing the booking ID, showing ID, email, and quantity. The Notification service consumes that message and sends the confirmation email.
+
 ## Docker
 
 From the repository root:

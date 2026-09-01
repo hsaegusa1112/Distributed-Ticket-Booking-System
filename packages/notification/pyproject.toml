@@ -5,6 +5,7 @@ description = "Notification microservice"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]",
+    "pika>=1.4.4",
 ]
 
 [tool.uv]
