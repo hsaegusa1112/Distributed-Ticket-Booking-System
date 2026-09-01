@@ -6,7 +6,7 @@ COPY go.mod ./
 RUN go mod download
 
 COPY main.go ./
-RUN go build -o auth-service main.go
+RUN go mod tidy && go build -o auth-service main.go
 
 FROM alpine:3.21
 
