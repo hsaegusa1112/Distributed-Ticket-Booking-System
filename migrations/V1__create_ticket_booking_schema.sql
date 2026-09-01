@@ -17,6 +17,7 @@ CREATE TABLE bookings (
   id UUID PRIMARY KEY,
   showing_id UUID NOT NULL REFERENCES showings(id),
   customer_id UUID NOT NULL,
+  email TEXT NOT NULL CHECK (char_length(email) > 0),
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   status TEXT NOT NULL DEFAULT 'confirmed',
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

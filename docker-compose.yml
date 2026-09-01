@@ -65,6 +65,8 @@ services:
       PORT: "8080"
       AUTH_SERVICE_URL: http://auth:8081
       BOOKING_SERVICE_URL: http://booking:8083
+      DATABASE_URL: postgres://ticket_booking:ticket_booking@postgres:5432/ticket_booking
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: local-development-jwt-secret-change-before-production
       WEB_ORIGIN: http://localhost:3000
     ports:
@@ -100,8 +102,8 @@ services:
       DATABASE_URL: postgres://ticket_booking:ticket_booking@postgres:5432/ticket_booking?sslmode=disable
       JWT_SECRET: local-development-jwt-secret-change-before-production
       WEB_ORIGIN: http://localhost:3000
-    expose:
-      - "8081"
+    ports:
+      - "8081:8081"
     depends_on:
       migrations:
         condition: service_completed_successfully
